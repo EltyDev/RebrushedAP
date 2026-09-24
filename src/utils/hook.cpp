@@ -1,14 +1,14 @@
-#include "utils/hook.hpp"
-#include "utils/memory.hpp"
+#include "Utils/Hook.hpp"
+#include "Utils/Memory.hpp"
 
 #include <Windows.h>
 #include <stdlib.h> 
-#include "rebrushed/rebrushed_ap.hpp"
+#include "Rebrushed/RebrushedAP.hpp"
 #include <thread>
 
 std::map<uintptr_t, HookData> Hook::_callbacks;
 
-Hook::Hook(uintptr_t functionAddress, std::function<bool()> callback)
+Hook::Hook(uintptr_t functionAddress, std::function<bool(uint64_t, uint64_t, uint64_t, uint64_t)> callback)
     : _functionAddress(functionAddress), _callback(callback) {}
 
 void Hook::apply() {
@@ -27,9 +27,9 @@ void Hook::apply() {
         uintptr_t applyJumpAddress = reinterpret_cast<uintptr_t>(&Hook::applyJump);
         Memory::write(reinterpret_cast<uintptr_t>(trampolineBytes) + 0x10, callbackAddress);
         Memory::write(reinterpret_cast<uintptr_t>(trampolineBytes) + 0x1A, _functionAddress);
-        Memory::write(reinterpret_cast<uintptr_t>(trampolineBytes) + 0x3E, _functionAddress);
-        Memory::write(reinterpret_cast<uintptr_t>(trampolineBytes) + 0x53, reinterpret_cast<uintptr_t>(&hookData));
-        Memory::write(reinterpret_cast<uintptr_t>(trampolineBytes) + 0x5D, applyJumpAddress);
+        Memory::write(reinterpret_cast<uintptr_t>(trampolineBytes) + 0x57, _functionAddress);
+        Memory::write(reinterpret_cast<uintptr_t>(trampolineBytes) + 0x6C, reinterpret_cast<uintptr_t>(&hookData));
+        Memory::write(reinterpret_cast<uintptr_t>(trampolineBytes) + 0x76, applyJumpAddress);
         Memory::write(reinterpret_cast<uintptr_t>(jumpBytes) + 2, reinterpret_cast<uintptr_t>(trampolineBytes));
         VirtualProtect(reinterpret_cast<void*>(trampolineBytes), sizeof(TRAMPOLINE_BYTECODE), PAGE_EXECUTE_READWRITE, nullptr);
         DWORD oldProtect;
@@ -46,7 +46,7 @@ uintptr_t Hook::getFunctionAddress() const {
     return _functionAddress;
 }
 
-std::function<bool()> &Hook::getCallback() {
+std::function<bool(uint64_t, uint64_t, uint64_t, uint64_t)> &Hook::getCallback() {
     return _callback;
 }
 
@@ -54,14 +54,14 @@ bool Hook::isApplied() const {
     return _isApplied;
 }
 
-bool Hook::handleCallback(uintptr_t functionAddress) {
+bool Hook::handleCallback(uintptr_t functionAddress, uint64_t firstParam, uint64_t secondParam, uint64_t thirdParam, uint64_t fourthParam) {
     auto entry = _callbacks.find(functionAddress);
     if (entry == _callbacks.end())
         return false;
-    std::vector<std::function<bool()>> &callbacks = entry->second.callbacks;
+    std::vector<std::function<bool(uint64_t, uint64_t, uint64_t, uint64_t)>> &callbacks = entry->second.callbacks;
     bool toCancel = false;
     for (auto &callback : callbacks) {
-        if (callback())
+        if (callback(firstParam, secondParam, thirdParam, fourthParam))
             toCancel = true;
     }
     restore(entry->second);

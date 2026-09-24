@@ -18,6 +18,16 @@ namespace Memory {
     }
 
     template<typename T>
+    T readOffset(uintptr_t offset)
+    {
+        uintptr_t base = (uintptr_t) GetModuleHandleA(nullptr);
+        uintptr_t address = base + offset;
+        if (!address)
+            throw std::runtime_error("Invalid memory address");
+        return *reinterpret_cast<T*>(address);
+    }
+
+    template<typename T>
     void write(uintptr_t address, T value)
     {
         DWORD oldProtect;
@@ -35,7 +45,7 @@ namespace Memory {
         return func(args...);
     }
 
-    uintptr_t findFreeMemory(uintptr_t address, uint8_t length) {
+    inline uintptr_t findFreeMemory(uintptr_t address, uint8_t length) {
         unsigned char *ptr = (unsigned char *) address;
         for (int i = 0; i < std::numeric_limits<int>::max(); ++i) {
             if (*(ptr + i) != 0xCC) continue;

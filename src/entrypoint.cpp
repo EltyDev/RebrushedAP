@@ -1,8 +1,8 @@
-#include "proxy.hpp"
+#include "Proxy.hpp"
 #include <Shlwapi.h>
 #include <consoleapi.h>
 #include <libloaderapi.h>
-#include "rebrushed/rebrushed_ap.hpp"
+#include "Rebrushed/RebrushedAP.hpp"
 
 static HANDLE thread;
 

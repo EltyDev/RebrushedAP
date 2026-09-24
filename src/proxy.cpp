@@ -1,4 +1,4 @@
-#include "proxy.hpp"
+#include "Proxy.hpp"
 #include <Shlwapi.h>
 #include <stdexcept>
 

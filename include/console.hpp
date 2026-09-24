@@ -7,12 +7,6 @@
 
 #undef ERROR
 
-#define GREEN "\x1b[32m"
-#define BLUE "\x1b[94m"
-#define YELLOW "\x1b[33m"
-#define RED "\x1b[31m"
-#define RESET "\x1b[0m"
-
 enum class LogLevel {
     SUCCESS,
     INFO,
@@ -33,23 +27,33 @@ class Console {
             std::ostringstream oss;
             (oss << ... << std::forward<Args>(args));
             std::string message = oss.str();
-            std::string prefix;
+            WORD color = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+            const char* levelName = "";
             switch (level)
             {
             case LogLevel::INFO:
-                prefix = BLUE "[INFO] ";
+                color = FOREGROUND_BLUE | FOREGROUND_INTENSITY;
+                levelName = "[INFO] ";
                 break;
             case LogLevel::WARNING:
-                prefix = YELLOW "[WARNING] ";
+                color = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY;
+                levelName = "[WARNING] ";
                 break;
             case LogLevel::ERROR:
-                prefix = RED "[ERROR] ";
+                color = FOREGROUND_RED | FOREGROUND_INTENSITY;
+                levelName = "[ERROR] ";
                 break;
             case LogLevel::SUCCESS:
-                prefix = GREEN "[SUCCESS] ";
+                color = FOREGROUND_GREEN | FOREGROUND_INTENSITY;
+                levelName = "[SUCCESS] ";
                 break;
             }
-            write(prefix + message + RESET + "\r\n");
+            SetConsoleTextAttribute(_writeHandle, color);
+            write(std::string(levelName) + message + "\r\n");
+            SetConsoleTextAttribute(
+                _writeHandle,
+                FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE
+            );
         }
     private:
         HANDLE _readHandle;

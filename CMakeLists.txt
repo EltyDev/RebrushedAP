@@ -6,13 +6,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
 add_library(version SHARED
-    ${CMAKE_SOURCE_DIR}/src/entrypoint.cpp
-    ${CMAKE_SOURCE_DIR}/src/console.cpp
-    ${CMAKE_SOURCE_DIR}/src/proxy.cpp
-    ${CMAKE_SOURCE_DIR}/src/rebrushed/rebrushed_ap.cpp
-    ${CMAKE_SOURCE_DIR}/src/utils/hook.cpp
+    ${CMAKE_SOURCE_DIR}/src/Entrypoint.cpp
+    ${CMAKE_SOURCE_DIR}/src/Console.cpp
+    ${CMAKE_SOURCE_DIR}/src/Proxy.cpp
+    ${CMAKE_SOURCE_DIR}/src/Rebrushed/RebrushedAP.cpp
+    ${CMAKE_SOURCE_DIR}/src/Utils/Hook.cpp
+    ${CMAKE_SOURCE_DIR}/src/Utils/FName.cpp
+    ${CMAKE_SOURCE_DIR}/src/Engine/FUObjectArray.cpp
     ${CMAKE_SOURCE_DIR}/version.def
 )
+
+target_compile_options(version PRIVATE -Wno-invalid-offsetof)
 
 target_include_directories(version PRIVATE
     ${CMAKE_SOURCE_DIR}/include

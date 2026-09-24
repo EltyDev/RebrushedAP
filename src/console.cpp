@@ -1,9 +1,10 @@
-#include "console.hpp"
+#include "Console.hpp"
 #include <consoleapi2.h>
 
 Console::Console()
 {
     _isAllocated = AllocConsole();
+    SetConsoleOutputCP(CP_UTF8);
     SetConsoleTitleA("Rebrushed AP Console");
     _writeHandle = CreateFileA("CONOUT$", GENERIC_WRITE, FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr);
     _readHandle  = CreateFileA("CONIN$",  GENERIC_READ,  FILE_SHARE_READ,  nullptr, OPEN_EXISTING, 0, nullptr);
