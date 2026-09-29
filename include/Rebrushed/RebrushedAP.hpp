@@ -23,24 +23,27 @@ class RebrushedAP {
         static ARecBaseCharacter* getBaseCharacter();
         static TArray<URecInventoryItem*> getAllItems();
         static void killPlayer();
+        static void giveItem(URecInventoryItem* item, int32_t amount);
+        static void sendNotification(const std::string &title, const std::string &message);
+        static void loadPak();
 
         template<typename T = void>
-        static T *getUObject(const std::string name, bool safe = false, uint32_t nth = 0)
+        static T *getUObject(const std::string name, bool safe = false, uint32_t nth = 0, bool contains = false)
         {
             if (_gObjects == nullptr) return nullptr;
             if (_cache.contains(name))
                 return reinterpret_cast<T *>(_cache.at(name));
-            UObject *object = getUObjectInternal(name, safe, nth);
+            UObject *object = getUObjectInternal(name, safe, nth, contains);
             if (object)
                 _cache.emplace(name, object);
             return reinterpret_cast<T *>(object);
         }
         
         template<typename T = void *>
-        static void waitObject(T *object, std::string_view name = {}, uint32_t nth = 0) {
+        static void waitObject(T *object, std::string_view name = {}, uint32_t nth = 0, bool contains = false) {
             while (*object == nullptr) 
             {
-                if (!name.empty()) *object = getUObject<typename std::remove_pointer<T>::type>(name.data(), false, nth);
+                if (!name.empty()) *object = getUObject<typename std::remove_pointer<T>::type>(name.data(), false, nth, contains);
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
             }
         }
@@ -53,7 +56,7 @@ class RebrushedAP {
         static FUObjectArray *_gObjects;
         static std::unordered_map<std::string, UObject *> _cache;
     protected:
-        static UObject* getUObjectInternal(std::string_view name, bool safe, int nth);
+        static UObject* getUObjectInternal(std::string_view name, bool safe, int nth, bool contains);
     
 };
 

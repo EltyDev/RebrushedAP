@@ -7,9 +7,12 @@
 #include <thread>
 
 std::map<uintptr_t, HookData> Hook::_callbacks;
+int Hook::_ID = 0;
 
 Hook::Hook(uintptr_t functionAddress, std::function<bool(uint64_t, uint64_t, uint64_t, uint64_t)> callback)
-    : _functionAddress(functionAddress), _callback(callback) {}
+    : _functionAddress(functionAddress), _callback(callback) {
+        _id = ++_ID;
+    }
 
 void Hook::apply() {
     if (_isApplied) return;
@@ -21,7 +24,7 @@ void Hook::apply() {
     if (_callbacks.find(_functionAddress) == _callbacks.end()) {
         unsigned char *functionBytes = (unsigned char *) VirtualAlloc(nullptr, functionSize, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
         unsigned char *trampolineBytes = (unsigned char *) VirtualAlloc(nullptr, sizeof(TRAMPOLINE_BYTECODE), MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-        const HookData &hookData = _callbacks.emplace(_functionAddress, HookData{_functionAddress, reinterpret_cast<uintptr_t>(functionBytes), functionSize, reinterpret_cast<uintptr_t>(trampolineBytes), {}}).first->second;
+        const HookData &hookData = _callbacks.emplace(_functionAddress, HookData{_functionAddress, reinterpret_cast<uintptr_t>(functionBytes), functionSize, reinterpret_cast<uintptr_t>(trampolineBytes), {}, std::make_unique<std::recursive_mutex>(), {}}).first->second;
         memcpy(trampolineBytes, TRAMPOLINE_BYTECODE, sizeof(TRAMPOLINE_BYTECODE));
         uintptr_t callbackAddress = reinterpret_cast<uintptr_t>(&Hook::handleCallback);
         uintptr_t applyJumpAddress = reinterpret_cast<uintptr_t>(&Hook::applyJump);
@@ -38,7 +41,9 @@ void Hook::apply() {
         memcpy(reinterpret_cast<void*>(_functionAddress), jumpBytes, sizeof(jumpBytes));
         VirtualProtect(reinterpret_cast<void*>(_functionAddress), functionSize, oldProtect, &oldProtect);
     }
-    _callbacks[_functionAddress].callbacks.push_back(_callback);
+    if (_callbacks[_functionAddress].callbacks.find(_id) == _callbacks[_functionAddress].callbacks.end())
+        _callbacks[_functionAddress].callbacks.emplace(_id, _callback);
+    _callbacks[_functionAddress].callbacks[_id] = _callback;
     _isApplied = true;
 }
 
@@ -58,10 +63,12 @@ bool Hook::handleCallback(uintptr_t functionAddress, uint64_t firstParam, uint64
     auto entry = _callbacks.find(functionAddress);
     if (entry == _callbacks.end())
         return false;
-    std::vector<std::function<bool(uint64_t, uint64_t, uint64_t, uint64_t)>> &callbacks = entry->second.callbacks;
+    auto &callbacks = entry->second.callbacks;
     bool toCancel = false;
+    for (int id : entry->second.toRemove)
+        callbacks.erase(id);
     for (auto &callback : callbacks) {
-        if (callback(firstParam, secondParam, thirdParam, fourthParam))
+        if (callback.second(firstParam, secondParam, thirdParam, fourthParam))
             toCancel = true;
     }
     restore(entry->second);
@@ -69,6 +76,13 @@ bool Hook::handleCallback(uintptr_t functionAddress, uint64_t firstParam, uint64
 }
 
 void Hook::applyJump(HookData &hookData) {
+    if (hookData.callbacks.empty()) {
+        restore(hookData);
+        VirtualFree(reinterpret_cast<void*>(hookData.originalFunction), 0, MEM_RELEASE);
+        _callbacks.erase(hookData.actualFunction);
+        return;
+    }
+    std::lock_guard<std::recursive_mutex> lock(*hookData.mutex);
     unsigned char jumpBytes[] = JUMP_BYTECODE;
     DWORD oldProtect;
     VirtualProtect(reinterpret_cast<void*>(hookData.actualFunction), sizeof(jumpBytes), PAGE_EXECUTE_READWRITE, &oldProtect);
@@ -78,9 +92,18 @@ void Hook::applyJump(HookData &hookData) {
 }
 
 void Hook::restore(HookData &hookData) {
+    std::lock_guard<std::recursive_mutex> lock(*hookData.mutex);
     DWORD oldProtect;
     VirtualProtect(reinterpret_cast<void*>(hookData.actualFunction), hookData.originalFunctionSize, PAGE_EXECUTE_READWRITE, &oldProtect);
     memcpy(reinterpret_cast<void*>(hookData.actualFunction), reinterpret_cast<void*>(hookData.originalFunction), hookData.originalFunctionSize);
     VirtualProtect(reinterpret_cast<void*>(hookData.actualFunction), hookData.originalFunctionSize, oldProtect, &oldProtect);
+}
+
+void Hook::restore() {
+    if (!_isApplied) return;
+    auto entry = _callbacks.find(_functionAddress);
+    if (entry == _callbacks.end())
+        return;
+    entry->second.toRemove.push_back(_id);
 }
 

@@ -5,6 +5,8 @@
 #include <map>
 #include <vector>
 #include <utility>
+#include <mutex>
+#include <memory>
 
 #define JUMP_BYTECODE { 0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xE0 }
 
@@ -40,7 +42,9 @@ struct HookData {
     uintptr_t originalFunction;
     size_t originalFunctionSize;
     uintptr_t trampolineFunction;
-    std::vector<std::function<bool(uint64_t, uint64_t, uint64_t, uint64_t)>> callbacks;
+    std::map<int, std::function<bool(uint64_t, uint64_t, uint64_t, uint64_t)>> callbacks;
+    std::unique_ptr<std::recursive_mutex> mutex;
+    std::vector<int> toRemove;
 };
 
 class Hook {
@@ -51,14 +55,17 @@ class Hook {
         std::function<bool(uint64_t, uint64_t, uint64_t, uint64_t)> &getCallback();
         bool isApplied() const;
         static bool handleCallback(uintptr_t functionAddress, uint64_t firstParam, uint64_t secondParam, uint64_t thirdParam, uint64_t fourthParam);
+        void restore();
     private:
         uintptr_t _functionAddress;
         std::function<bool(uint64_t, uint64_t, uint64_t, uint64_t)> _callback;
         bool _isApplied = false;
         unsigned char *originalFunction;
         static std::map<uintptr_t, HookData> _callbacks;
+        int _id;
         static void restore(HookData &hookData);
         static void applyJump(HookData &hookData);
+        static int _ID;
 };
 
 #endif /* !HOOK_HPP_ */

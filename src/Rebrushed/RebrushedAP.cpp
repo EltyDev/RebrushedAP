@@ -7,12 +7,16 @@
 #include <chrono>
 #include "Utils/Memory.hpp"
 #include "Utils/FName.hpp"
-#include "Functions/UPL/GetDefaultObject.hpp"
 #include "Functions/URecInventoryUtils/GetAllItemsWithAnyCategory.hpp"
-#include "Functions/GameplayTag/AddGameplayTag.hpp"
 #include <fstream>
 #include <filesystem>
 #include "Functions/ARecBaseCharacter/TriggerGenericDeath.hpp"
+#include "Functions/URecInventoryUtils/ChangeInventory.hpp"
+#include "Functions/FName/FNameConstructor.hpp"
+#include "Functions/FText/FTextConstructor.hpp"
+#include "Functions/Notification/AddToast.hpp"
+#include "Functions/Texture2D/StaticClass.hpp"
+#include "Functions/StaticLoadObject.hpp"
 
 std::atomic_bool RebrushedAP::isRunning = false;
 std::unique_ptr<Console> RebrushedAP::console = nullptr;
@@ -47,9 +51,28 @@ TArray<URecInventoryItem*> RebrushedAP::getAllItems()
 
 }
 
+void RebrushedAP::sendNotification(const std::string &title, const std::string &message)
+{
+    std::wstring titleW(title.begin(), title.end());
+    std::wstring messageW(message.begin(), message.end());
+    URecToastNotificationManager* manager = nullptr;
+    waitObject(&manager, "RecToastNotificationManager_", 0, true);
+    console->log(LogLevel::INFO, "Sending notification: ", title, " - ", message);
+    FName id;
+    FNameConstructor::call(&id, "notification_ap");
+    FString titleStr(titleW.c_str());
+    FString messageStr(messageW.c_str());
+    FText titleText;
+    FText messageText;
+    FTextConstructor::call(&titleText, &titleStr);
+    FTextConstructor::call(&messageText, &messageStr);
+    UClass *textureClass = Texture2D::StaticClass::call();
+    UTexture2D* texture = reinterpret_cast<UTexture2D*>(StaticLoadObject::call(textureClass, nullptr, L"/Game/REC/T_Logo.T_Logo", nullptr, 0, nullptr, false, nullptr));
+    AddToast::call(manager, &id, NotificationType::GENERIC, &titleText, &messageText, texture);
+}
+
 void RebrushedAP::waitLoad()
 {
-    std::this_thread::sleep_for(std::chrono::seconds(10));
     uintptr_t baseAddr = (uintptr_t) GetModuleHandleA(nullptr);
     console->log(LogLevel::INFO, "Waiting for global objects to load...");
     _gObjects = reinterpret_cast<FUObjectArray *>(baseAddr + GOBJECTS_OFFSET);
@@ -65,7 +88,15 @@ void RebrushedAP::killPlayer() {
     TriggerGenericDeath::call(character);
 }
 
-UObject* RebrushedAP::getUObjectInternal(std::string_view name, bool safe, int nth)
+void RebrushedAP::giveItem(URecInventoryItem* item, int32_t amount) {
+    ARecBaseCharacter* character = getBaseCharacter();
+    if (character == nullptr) return;
+    URecInventoryUtils* utils = nullptr;
+    waitObject(&utils, "Default__RecInventoryUtils");
+    ChangeInventory::call(utils, item, amount);
+}
+
+UObject* RebrushedAP::getUObjectInternal(std::string_view name, bool safe, int nth, bool contains)
 {
     UObject *object = nullptr;
     uint32_t counter = 0;
@@ -74,7 +105,8 @@ UObject* RebrushedAP::getUObjectInternal(std::string_view name, bool safe, int n
     for (int i = 0; i < _gObjects->ObjObjects.NumElements; ++i) {
         object = _gObjects->getObject(i);
         if (object == nullptr) continue;
-        if (FNameUtils::toString(object->NamePrivate) == name && ++counter > nth) break;
+        std::string objectName = FNameUtils::toString(object->NamePrivate);
+        if ((contains && objectName.find(name) != std::string::npos) || (!contains && objectName == name) && ++counter > nth) break;
         object = nullptr;
     }
     if (safe)
@@ -82,13 +114,11 @@ UObject* RebrushedAP::getUObjectInternal(std::string_view name, bool safe, int n
     return object;
 }
 
-void RebrushedAP::initialize()
+void RebrushedAP::initialize()  
 {
     uintptr_t baseAddr = (uintptr_t) GetModuleHandleA(nullptr);
     console = std::make_unique<Console>();
     waitLoad();
-    TArray<URecInventoryItem*> items = getAllItems();
-    console->log(LogLevel::INFO, "Found ", items.Num(), " items in the game!");
     console->log( LogLevel::SUCCESS, "Rebrushed AP loaded successfully!");
     bool needToKillMickey = false;
     Hook hook(baseAddr + 0x160a130, [&needToKillMickey](uint64_t firstParam, uint64_t secondParam, uint64_t thirdParam, uint64_t fourthParam) {
@@ -96,20 +126,20 @@ void RebrushedAP::initialize()
         needToKillMickey = true;
         return false;
     });
-    Hook hook2(baseAddr + 0x15ECBE0, [](uint64_t firstParam, uint64_t secondParam, uint64_t thirdParam, uint64_t fourthParam) {
-        auto component = reinterpret_cast<URecChangeInventoryComponent*>(firstParam);
+    Hook hook2(baseAddr + 0x15ecd60, [](uint64_t firstParam, uint64_t secondParam, uint64_t thirdParam, uint64_t fourthParam) {
+        console->log(LogLevel::INFO, "ARecCollectable::OnBeginOverlap called!");
+        sendNotification("Rebrushed AP", "Mickey has been killed!");
+        ARecCollectable* collectible = reinterpret_cast<ARecCollectable*>(firstParam);
+        URecChangeInventoryComponent* component = collectible->ChangeInventoryComponent;
+        TArray<URecInventoryItem*> items = getAllItems();
         if (component == nullptr) {
-            console->log(LogLevel::INFO, "Inventory component Execute called with null this!");
+            console->log(LogLevel::WARNING, "ARecCollectable::OnBeginOverlap called but ChangeInventoryComponent is null!");
+            console->log(LogLevel::WARNING, "Collectable name: ", FNameUtils::toString(collectible->NamePrivate));
             return false;
         }
-        if (component->Item == nullptr) {
-            console->log(LogLevel::INFO, "Inventory component Execute called with null item!");
-            return false;
-        }
-        console->log(LogLevel::INFO, "Name: ", FNameUtils::toString(component->Item->NamePrivate));
-        console->log(LogLevel::INFO, "Inventory component Execute called!");
-        console->log(LogLevel::INFO, "Item: ", reinterpret_cast<uint64_t>(component->Item));
-        console->log(LogLevel::INFO, "Amount: ", component->Amount);
+        URecInventoryItem* item = component->Item;
+        console->log(LogLevel::INFO, "Collectable ", FNameUtils::toString(collectible->NamePrivate), " collected item: ", FNameUtils::toString(item->NamePrivate));
+        component->Item = items[0];
         return false;
     });
     hook.apply();
@@ -118,8 +148,9 @@ void RebrushedAP::initialize()
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         if (needToKillMickey) {
             std::this_thread::sleep_for(std::chrono::milliseconds(7000));
+            console->log(LogLevel::INFO, "Killing Mickey...");
             needToKillMickey = false;
-            killPlayer();
+            
         }
     }
     console->log(LogLevel::INFO, "Rebrushed AP is unloading...");
