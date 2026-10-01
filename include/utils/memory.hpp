@@ -8,7 +8,7 @@
 
 #undef max
 
-namespace Memory {
+namespace Utils::Memory {
     template<typename T>
     T read(uintptr_t address)
     {
@@ -36,13 +36,21 @@ namespace Memory {
         VirtualProtect(reinterpret_cast<void *>(address), sizeof(T), oldProtect, &oldProtect);
     }
 
-    template<typename Ret, typename Convention, typename... Args>
-    Ret call(uintptr_t offset, Args... args)
-    {
-        uintptr_t base = (uintptr_t) GetModuleHandleA(nullptr);
-        uintptr_t address = base + offset;
-        auto func = reinterpret_cast<Convention>(address);
-        return func(args...);
+    inline uintptr_t findNearestFunctionStart(uintptr_t address) {
+        unsigned short *ptr = (unsigned short *) address;
+        bool alignementFound = false;
+        for (int i = 0; i < std::numeric_limits<int>::max(); ++i) {
+            if (!alignementFound) {
+                if (*(ptr + i) != 0xCCCC)
+                    continue;
+                else
+                    alignementFound = true;
+            } else {
+                if (*(ptr + i) != 0xCCCC)
+                    return address + i * sizeof(unsigned short) + 1;
+            }
+        }
+        throw std::out_of_range("Offset can't exceed 32 bit signed int");
     }
 
     inline uintptr_t findFreeMemory(uintptr_t address, uint8_t length) {

@@ -1,7 +1,6 @@
 #pragma once
 #include <cstdint>
 #include <locale>
-#include "Engine/TArray.hpp"
 
 /********************************************************
 *                                                       *
@@ -30,7 +29,7 @@
 
 
 /// Definition for TArray
-/*
+
 template <class T = char>
 struct TArray
 {
@@ -97,7 +96,6 @@ public:
     int32_t Count;
     int32_t Max;
 };
-*/
 
 
 /// Definition for FString

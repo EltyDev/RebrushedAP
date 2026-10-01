@@ -9,10 +9,27 @@ add_library(version SHARED
     ${CMAKE_SOURCE_DIR}/src/Entrypoint.cpp
     ${CMAKE_SOURCE_DIR}/src/Console.cpp
     ${CMAKE_SOURCE_DIR}/src/Proxy.cpp
-    ${CMAKE_SOURCE_DIR}/src/Rebrushed/RebrushedAP.cpp
+    ${CMAKE_SOURCE_DIR}/src/Rebrushed/AP.cpp
+    ${CMAKE_SOURCE_DIR}/src/Rebrushed/GameData.cpp
+    ${CMAKE_SOURCE_DIR}/src/Game/URecToastNotificationManager.cpp
+    ${CMAKE_SOURCE_DIR}/src/Game/URecInventoryUtils.cpp
+    ${CMAKE_SOURCE_DIR}/src/Game/URecChangeInventoryComponent.cpp
+    ${CMAKE_SOURCE_DIR}/src/Game/ARecBaseCharacter.cpp
     ${CMAKE_SOURCE_DIR}/src/Utils/Hook.cpp
-    ${CMAKE_SOURCE_DIR}/src/Utils/FName.cpp
     ${CMAKE_SOURCE_DIR}/src/Engine/FUObjectArray.cpp
+    ${CMAKE_SOURCE_DIR}/src/Engine/AActor.cpp
+    ${CMAKE_SOURCE_DIR}/src/Engine/FText.cpp
+    ${CMAKE_SOURCE_DIR}/src/Engine/FName.cpp
+    ${CMAKE_SOURCE_DIR}/src/Engine/Functions.cpp
+    ${CMAKE_SOURCE_DIR}/src/Engine/UObject.cpp
+    ${CMAKE_SOURCE_DIR}/src/Engine/UStaticMesh.cpp
+    ${CMAKE_SOURCE_DIR}/src/Engine/UTexture2D.cpp
+    ${CMAKE_SOURCE_DIR}/src/Engine/UStaticMeshComponent.cpp
+    ${CMAKE_SOURCE_DIR}/src/Engine/UActorComponent.cpp
+    ${CMAKE_SOURCE_DIR}/src/Engine/USceneComponent.cpp
+    ${CMAKE_SOURCE_DIR}/src/Engine/UMeshComponent.cpp
+    ${CMAKE_SOURCE_DIR}/src/Engine/UMaterialInterface.cpp
+    ${CMAKE_SOURCE_DIR}/src/Engine/UMaterial.cpp
     ${CMAKE_SOURCE_DIR}/version.def
 )
 
