@@ -29,9 +29,11 @@ namespace Rebrushed::AP {
     void sendNotification(const std::string &title, const std::string &message);
     void onDeath();
     void loop();
+    void setMaxHealth(float maxHealth);
     void onChestInteraction(URecChestInteractionComponent* component, AActor* actor);
     void onItemCollected(ARecCollectable* collectible);
     void executeOnGameThread(std::function<void()> func);
+    void teleportPlayer(const std::string &levelPath, const std::string &portalName, const std::string &options);
 };
 
 #endif /* !REBRUSHED_AP_HPP_ */

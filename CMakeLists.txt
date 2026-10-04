@@ -15,6 +15,11 @@ add_library(version SHARED
     ${CMAKE_SOURCE_DIR}/src/Game/URecInventoryUtils.cpp
     ${CMAKE_SOURCE_DIR}/src/Game/URecChangeInventoryComponent.cpp
     ${CMAKE_SOURCE_DIR}/src/Game/ARecBaseCharacter.cpp
+    ${CMAKE_SOURCE_DIR}/src/Game/URecAbilityUtils.cpp
+    ${CMAKE_SOURCE_DIR}/src/Game/UPL_HealthAttributeSet.cpp
+    ${CMAKE_SOURCE_DIR}/src/Game/UPL_SaveGameSystem.cpp
+    ${CMAKE_SOURCE_DIR}/src/Game/UPL_SaveGameUtils.cpp
+    ${CMAKE_SOURCE_DIR}/src/Game/URecGameInstance.cpp
     ${CMAKE_SOURCE_DIR}/src/Utils/Hook.cpp
     ${CMAKE_SOURCE_DIR}/src/Engine/FUObjectArray.cpp
     ${CMAKE_SOURCE_DIR}/src/Engine/AActor.cpp

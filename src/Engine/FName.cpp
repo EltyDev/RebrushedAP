@@ -7,7 +7,12 @@ namespace Engine {
     std::unordered_map<uint64_t, std::string> FName::_cache;
 
     FName::FName(const std::string &name, EFindName findType) {
-        Utils::Function::call<0x17b14f0, void(*)(FName*, const std::string&, EFindName)>(this, name, findType);
+        if (name.empty()) {
+            this->ComparisonIndex = 0;
+            this->Number = 0;
+            return;
+        }
+        Utils::Function::call<0x17b14f0, void(*)(FName*, char const *, EFindName)>(this, name.c_str(), findType);
         const uint64_t cacheKey = (static_cast<uint64_t>(this->ComparisonIndex) << 32) | static_cast<uint32_t>(this->Number);
         _cache[cacheKey] = name;
     }

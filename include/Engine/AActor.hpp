@@ -2,6 +2,7 @@
 #define AACTOR_HPP_
 
 #include "SDK/SDK.h"
+#include "Engine/UActorComponent.hpp"
 
 namespace Engine {
     class AActor : public UObject {

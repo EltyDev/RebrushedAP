@@ -1,5 +1,5 @@
-#ifndef UENGINE_HPP_
-#define UENGINE_HPP_
+#ifndef UOBJECT_HPP_
+#define UOBJECT_HPP_
 
 #include "SDK/SDK.h"
 #include "Engine/FName.hpp"
@@ -22,4 +22,4 @@ namespace Engine {
     };
 }
 
-#endif /* !UENGINE_HPP_ */
+#endif /* !UOBJECT_HPP_ */

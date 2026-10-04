@@ -20,6 +20,7 @@ namespace Rebrushed::GameData {
     inline Engine::FUObjectArray* _gObjects = nullptr;
     inline std::unordered_map<std::string, Engine::UObject *> _cache;
     inline std::thread::id gameThreadId;
+    inline URecPersistenceSystem* _persistenceSystem = nullptr;
 
     Engine::UObject* getUObjectInternal(std::string_view name, bool safe, int nth, bool contains);
 
@@ -50,6 +51,8 @@ namespace Rebrushed::GameData {
     Engine::UStaticMesh *getAPMesh();
     Engine::UTexture2D *getAPTexture();
     Engine::UMaterial *getAPMaterial();
+    URecPersistenceSystem *getPersistenceSystem();
+    FPL_SaveResult save(bool bWasAutoSave = false, bool bAsync = true);
 }
 
 #endif /* !GAMEDATA_HPP_ */

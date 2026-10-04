@@ -21,6 +21,12 @@
 #include "Engine/UActorComponent.hpp"
 #include "Engine/USceneComponent.hpp"
 #include "Engine/UMaterialInterface.hpp"
+#include "Game/ARecBaseCharacter.hpp"
+#include "Engine/TArray.hpp"
+#include "Game/URecAbilityUtils.hpp"
+#include "Game/UPL_HealthAttributeSet.hpp"
+#include "Engine/FMemory.hpp"
+#include "Game/URecGameInstance.hpp"
 
 namespace Rebrushed::AP {
 
@@ -100,25 +106,9 @@ namespace Rebrushed::AP {
     }
 
     void loop() {
-        
     }
 
     void onDeath() {
-
-    }
-
-    static void WatchMaterial(Engine::UStaticMeshComponent* comp, int tick) {
-        AP::executeOnGameThread([comp, tick]() {
-            auto* m = comp->GetMaterial(0);
-            console->log(LogLevel::INFO, "t+", tick, ": ",
-                m ? m->NamePrivate.ToString() : "null", " | classe: ",
-                m ? reinterpret_cast<Engine::FName*>(&m->ClassPrivate->NamePrivate)->ToString() : "-");
-            if (tick < 30)
-                std::thread([comp, tick] {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                    WatchMaterial(comp, tick + 1);
-                }).detach();
-        });
     }
 
     void onChestInteraction(URecChestInteractionComponent* chestComponent, AActor* actor) {
@@ -143,13 +133,54 @@ namespace Rebrushed::AP {
         sendNotification("Item Collected", "Player collected an item!");
         TArray<URecInventoryItem*> items = GameData::getAllItems();
         URecChangeInventoryComponent* inventoryComponent = collectible->ChangeInventoryComponent;
+        if (inventoryComponent == nullptr) {
+            console->log(LogLevel::ERROR, "Inventory component is null!");
+            return;
+        }
         inventoryComponent->Item = items[0];
-        killPlayer();
+        teleportPlayer("/Game/REC/Maps/03_MeanStreet/01_MeanStreet/MS_MS_P.MS_MS_P", "", "");
     }
+
 
     void executeOnGameThread(std::function<void()> func) {
         std::lock_guard<std::mutex> lock(mutexFunctions);
         toExecuteOnGameThread.push_back(func);
+    }
+
+    void setMaxHealth(float maxHealth) {
+        Game::ARecBaseCharacter* player = GameData::getPlayerCharacter();
+        if (player == nullptr) return;
+        FGameplayAttribute maxHeathAttr;
+        FGameplayAttribute healthAttr;
+        Game::UPL_HealthAttributeSet::GetMaxHealthAttribute(&maxHeathAttr);
+        Game::UPL_HealthAttributeSet::GetHealthAttribute(&healthAttr);
+        URecPersistenceSystem *persistenceSystem = GameData::getPersistenceSystem();
+        Game::URecAbilityUtils::OverridePlayerAttribute(player, maxHeathAttr, maxHealth);
+        persistenceSystem->PersistentData.PlayerData.MaxHealth = maxHealth;
+        if (persistenceSystem->PersistentData.PlayerData.Health > maxHealth) {
+            Game::URecAbilityUtils::OverridePlayerAttribute(player, healthAttr, maxHealth);
+            persistenceSystem->PersistentData.PlayerData.Health = maxHealth;
+        }
+        GameData::save();
+    }
+
+    void teleportPlayer(const std::string &levelPath, const std::string &portalName, const std::string &options) {
+        Game::URecGameInstance* gameInstance = reinterpret_cast<Game::URecGameInstance*>(GameData::getWorld()->OwningGameInstance);
+        if (gameInstance == nullptr) {
+            console->log(LogLevel::ERROR, "Game instance is null!");
+            return;
+        }
+        wchar_t *optionsW = Engine::FMemory::Malloc<wchar_t>(options.size() + 1);
+        std::mbstowcs(optionsW, options.c_str(), options.size() + 1);
+        wchar_t *portalNameW = Engine::FMemory::Malloc<wchar_t>(portalName.size() + 1);
+        std::mbstowcs(portalNameW, portalName.c_str(), portalName.size() + 1);
+        FString optionsF(optionsW);
+        FString portalNameF(portalNameW);
+        TSoftObjectPtr<UWorld> worldPtr;
+        Engine::FName levelName(levelPath);
+        worldPtr.ObjectID.AssetPathName.ComparisonIndex = levelName.ComparisonIndex;
+        worldPtr.ObjectID.AssetPathName.Number = levelName.Number;
+        gameInstance->RequestLevelChange(&worldPtr, portalNameF, optionsF);
     }
 
 

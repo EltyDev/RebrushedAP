@@ -7,6 +7,7 @@
 #include "Engine/Functions.hpp"
 #include "Engine/TArray.hpp"
 #include "Game/URecInventoryUtils.hpp"
+#include "Game/UPL_SaveGameUtils.hpp"
 
 
 namespace Rebrushed::GameData {
@@ -32,11 +33,12 @@ namespace Rebrushed::GameData {
         _gObjects = reinterpret_cast<Engine::FUObjectArray *>(baseAddr + GOBJECTS_OFFSET);
         _gWorld = Utils::Memory::readOffset<UWorld*>(GWORLD_OFFSET);
         waitObject(&_gObjects);
+        waitObject(&_persistenceSystem, "RecPersistenceSystem_", 0, true);
         AP::console->log(LogLevel::SUCCESS, "Global objects loaded successfully!");
     }
 
     UWorld *getWorld() {
-        return _gWorld;
+        return Utils::Memory::readOffset<UWorld*>(GWORLD_OFFSET);
     }
 
     Game::ARecBaseCharacter* getPlayerCharacter() {
@@ -106,6 +108,17 @@ namespace Rebrushed::GameData {
         }
         UClass *materialClass = Engine::UMaterial::StaticClass();
         return reinterpret_cast<Engine::UMaterial*>(Engine::Functions::StaticLoadObject(materialClass, nullptr, L"/Game/REC/M_ArchipelagoLogo_A.M_ArchipelagoLogo_A", nullptr, 0, nullptr, false, nullptr));
+    }
+
+    URecPersistenceSystem* getPersistenceSystem() {
+        return _persistenceSystem;
+    }
+
+    FPL_SaveResult save(bool bWasAutoSave, bool bAsync) {
+        if (_persistenceSystem == nullptr)
+            return { false, EPL_SaveGameErrorCode::EPL_SaveGameErrorCode__SavingGameFailed_NoPlatformUserId };
+        FPL_SaveResult result;
+        return Game::UPL_SaveGameUtils::GetSaveGameSystem(_gWorld)->SaveState(&result, bWasAutoSave, bAsync);
     }
 
 }
