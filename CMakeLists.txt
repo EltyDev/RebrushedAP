@@ -20,7 +20,9 @@ add_library(version SHARED
     ${CMAKE_SOURCE_DIR}/src/Game/UPL_SaveGameSystem.cpp
     ${CMAKE_SOURCE_DIR}/src/Game/UPL_SaveGameUtils.cpp
     ${CMAKE_SOURCE_DIR}/src/Game/URecGameInstance.cpp
+    ${CMAKE_SOURCE_DIR}/src/Game/URecShopUtils.cpp
     ${CMAKE_SOURCE_DIR}/src/Utils/Hook.cpp
+    ${CMAKE_SOURCE_DIR}/src/Utils/Patch.cpp
     ${CMAKE_SOURCE_DIR}/src/Engine/FUObjectArray.cpp
     ${CMAKE_SOURCE_DIR}/src/Engine/AActor.cpp
     ${CMAKE_SOURCE_DIR}/src/Engine/FText.cpp

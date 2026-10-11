@@ -360,9 +360,10 @@ public:
 class UStruct : public UField
 { 
 public:
-	class UStruct*                                     SuperStruct;                                                // 0x0030   (0x0008)  
-	class UField*                                      Children;                                                   // 0x0038   (0x0008)  
-	unsigned char                                      UnknownData00_7[0x70];                                      // 0x0040   (0x0070)  MISSED
+	unsigned char   								   StructBaseChain[0x10];									   // 0x0030   (0x0010)
+	class UStruct*                                     SuperStruct;                                                // 0x0040   (0x0008)
+	class UField*                                      Children;                                                   // 0x0048   (0x0008)
+	unsigned char                                      UnknownData00_7[0x60];                                      // 0x0050   (0x0060)  MISSED
 };
 
 /// Class /Script/CoreUObject.ScriptStruct
@@ -1479,8 +1480,8 @@ static_assert(offsetof(UObject, ClassPrivate) == 0x0010);
 static_assert(offsetof(UObject, NamePrivate) == 0x0018);
 static_assert(offsetof(UObject, OuterPrivate) == 0x0020);
 static_assert(offsetof(UField, Next) == 0x0028);
-static_assert(offsetof(UStruct, SuperStruct) == 0x0030);
-static_assert(offsetof(UStruct, Children) == 0x0038);
+static_assert(offsetof(UStruct, SuperStruct) == 0x0040);
+static_assert(offsetof(UStruct, Children) == 0x0048);
 static_assert(offsetof(FJoinabilitySettings, SessionName) == 0x0000);
 static_assert(offsetof(FTwoVectors, v1) == 0x0000);
 static_assert(offsetof(FTwoVectors, v2) == 0x000C);

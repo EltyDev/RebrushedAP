@@ -9,4 +9,12 @@ namespace Engine {
     UClass *UObject::StaticClass() {
         return Utils::Function::call<0x83de80, UClass* (*)()>();
     }
+
+    FString UObject::GetPathName() {
+        FString result{};
+        Utils::Function::call<0x19a6740,
+            void (*)(const UObject* self, const UObject* stopOuter, FString* out)>(
+                this, nullptr, &result);
+        return result;
+    }
 }

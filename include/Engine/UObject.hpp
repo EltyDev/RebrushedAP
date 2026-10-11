@@ -10,6 +10,7 @@ namespace Engine {
 
             void ProcessEvent(class UFunction *, void *);
             static UClass *StaticClass();
+            FString GetPathName();
 
             uint64_t                                           vtable;                                                     // 0x0000   (0x0008)
             EObjectFlags                                       ObjectFlags;                                                // 0x0008   (0x0004)

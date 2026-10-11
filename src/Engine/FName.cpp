@@ -17,12 +17,22 @@ namespace Engine {
         _cache[cacheKey] = name;
     }
 
+    static bool safeName(const FName* fname, FString& out) {
+        __try {
+            Utils::Function::call<0x17be300, FString *(*)(FName const *, FString *)>(fname, &out);
+            return true;
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
+            out = FString(L"None");
+            return false;
+        }
+    }
+
     const std::string &FName::ToString() const {
         const uint64_t cacheKey = (static_cast<uint64_t>(this->ComparisonIndex) << 32) | static_cast<uint32_t>(this->Number);
         if (_cache.find(cacheKey) != _cache.end())
             return _cache[cacheKey];
         FString string;
-        Utils::Function::call<0x17be300, FString *(*)(FName const *, FString *)>(this, &string);
+        safeName(this, string);
         _cache[cacheKey] = string.ToString();
         return _cache[cacheKey];
     }
